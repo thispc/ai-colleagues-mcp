@@ -3,7 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { COLLEAGUES, run } from './colleagues.js';
-import { readQuota, gearFor, describe as describeQuota, DEFAULT_THRESHOLDS } from './quota.js';
+import { readQuota, gearFor, planFor, describe as describeQuota, DEFAULT_THRESHOLDS } from './quota.js';
 
 /**
  * Other AI providers, registered as tools.
@@ -41,7 +41,8 @@ server.registerTool('my_quota', {
     'How much of Claude\'s usage window remains, read from its own cache, and what that suggests. Call it when '
     + 'a session has run long or a job looks bulky, and let the answer decide: with plenty left, do the work '
     + 'yourself; near the floor, hand it to a colleague with `delegate` and keep the rest for judgement. '
-    + 'Thresholds default to 70 and 30 percent remaining.',
+    + 'This reports and advises only: the running session\'s model is set by the person with /model and cannot '
+    + 'be changed from here. Thresholds default to 70 and 30 percent remaining.',
   inputSchema: {
     best_above_percent: z.number().optional(),
     saver_below_percent: z.number().optional()
@@ -54,8 +55,13 @@ server.registerTool('my_quota', {
   }
   const q = readQuota();
   const gear = gearFor(q, t);
+  // This tool cannot change the running session's model: that is set with /model, by the person, and nothing
+  // here can reach it. All it can do is say what is left and what that is worth doing about.
+  const plan = planFor(q, t);
   const advice = gear === 'saver'
-    ? 'Delegate the bulky parts now; keep what is left for deciding and writing.'
+    ? `Delegate the bulky parts now and keep what is left for deciding and writing. If this session is on an `
+      + `expensive model, it is worth telling them they can drop to ${plan.model ?? 'a cheaper model'} with /model; `
+      + `you cannot change it yourself.`
     : gear === 'plenty' ? 'Plenty left: do it yourself.'
     : 'Middling: delegate work that is bulky rather than hard.';
   return { content: [{ type: 'text', text: `${describeQuota(q, t)}\n${advice}` }] };
