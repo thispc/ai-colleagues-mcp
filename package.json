@@ -1,0 +1,14 @@
+{
+	"name": "ai-colleagues-mcp",
+	"version": "0.1.0",
+	"description": "Register other AI providers as tools, so Claude can delegate heavy work instead of doing all of it itself.",
+	"license": "MIT",
+	"type": "module",
+	"bin": { "ai-colleagues-mcp": "dist/server.js" },
+	"scripts": {
+		"compile": "tsc -p tsconfig.json",
+		"test": "npm run compile && node --test dist/test/**/*.test.js"
+	},
+	"dependencies": { "@modelcontextprotocol/sdk": "^1.30.0" },
+	"devDependencies": { "@types/node": "^22.0.0", "typescript": "^5.6.0" }
+}
