@@ -38,3 +38,9 @@ Restart Claude Code so it picks the tools up. `claude mcp list` should show it c
 
 Add an entry to `COLLEAGUES` in `src/colleagues.ts`: how to build its arguments, how to read its answer out of
 whatever it prints, and how to tell "out of quota" from "the task failed". The rest is shared.
+
+## Knowing when to delegate
+
+`my_quota` reads how much of Claude's own window is left from `~/.claude/usage-cache.json` and says which gear
+that implies: plenty (do it yourself), middling (delegate what is bulky), saver (delegate and keep the rest for
+judgement). Thresholds default to 70 and 30 percent remaining and can be passed per call.

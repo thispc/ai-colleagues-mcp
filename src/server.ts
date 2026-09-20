@@ -3,6 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { COLLEAGUES, run } from './colleagues.js';
+import { readQuota, gearFor, describe as describeQuota, DEFAULT_THRESHOLDS } from './quota.js';
 
 /**
  * Other AI providers, registered as tools.
@@ -32,6 +33,30 @@ server.registerTool('list_colleagues', {
     return `- ${c.id}: ${c.label}\n  good at: ${c.goodAt}\n  state: ${state}`;
   }));
   return { content: [{ type: 'text', text: lines.join('\n') }] };
+});
+
+server.registerTool('my_quota', {
+  title: "How much of my own window is left",
+  description:
+    'How much of Claude\'s usage window remains, read from its own cache, and what that suggests. Call it when '
+    + 'a session has run long or a job looks bulky, and let the answer decide: with plenty left, do the work '
+    + 'yourself; near the floor, hand it to a colleague with `delegate` and keep the rest for judgement. '
+    + 'Thresholds default to 70 and 30 percent remaining.',
+  inputSchema: {
+    best_above_percent: z.number().optional(),
+    saver_below_percent: z.number().optional()
+  }
+}, async ({ best_above_percent, saver_below_percent }) => {
+  const t = { ...DEFAULT_THRESHOLDS,
+              bestAbove: best_above_percent ?? DEFAULT_THRESHOLDS.bestAbove,
+              saverBelow: saver_below_percent ?? DEFAULT_THRESHOLDS.saverBelow };
+  const q = readQuota();
+  const gear = gearFor(q, t);
+  const advice = gear === 'saver'
+    ? 'Delegate the bulky parts now; keep what is left for deciding and writing.'
+    : gear === 'plenty' ? 'Plenty left: do it yourself.'
+    : 'Middling: delegate work that is bulky rather than hard.';
+  return { content: [{ type: 'text', text: `${describeQuota(q, t)}\n${advice}` }] };
 });
 
 server.registerTool('delegate', {
