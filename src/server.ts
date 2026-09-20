@@ -47,9 +47,11 @@ server.registerTool('my_quota', {
     saver_below_percent: z.number().optional()
   }
 }, async ({ best_above_percent, saver_below_percent }) => {
-  const t = { ...DEFAULT_THRESHOLDS,
-              bestAbove: best_above_percent ?? DEFAULT_THRESHOLDS.bestAbove,
-              saverBelow: saver_below_percent ?? DEFAULT_THRESHOLDS.saverBelow };
+  const t = { ...DEFAULT_THRESHOLDS, saverBelow: saver_below_percent ?? DEFAULT_THRESHOLDS.saverBelow };
+  if (typeof best_above_percent === 'number') {
+    t.ladder = [{ atLeast: best_above_percent, model: DEFAULT_THRESHOLDS.ladder[0].model },
+                ...DEFAULT_THRESHOLDS.ladder.slice(1)];
+  }
   const q = readQuota();
   const gear = gearFor(q, t);
   const advice = gear === 'saver'
